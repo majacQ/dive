@@ -2,21 +2,23 @@ package view
 
 import (
 	"fmt"
+
 	"github.com/awesome-gocui/gocui"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+
 	"github.com/wagoodman/dive/dive/image"
 	"github.com/wagoodman/dive/runtime/ui/format"
 	"github.com/wagoodman/dive/runtime/ui/key"
 	"github.com/wagoodman/dive/runtime/ui/viewmodel"
 )
 
-// Layer holds the UI objects and data models for populating the lower-left pane. Specifically the pane that
-// shows the image layers and layer selector.
+// Layer holds the UI objects and data models for populating the lower-left pane.
+// Specifically the pane that shows the image layers and layer selector.
 type Layer struct {
 	name                  string
 	gui                   *gocui.Gui
-	view                  *gocui.View
+	body                  *gocui.View
 	header                *gocui.View
 	vm                    *viewmodel.LayerSetState
 	constrainedRealEstate bool
@@ -72,6 +74,12 @@ func (v *Layer) notifyLayerChangeListeners() error {
 			return err
 		}
 	}
+	// this is hacky, and I do not like it
+	if layerDetails, err := v.gui.View("layerDetails"); err == nil {
+		if err := layerDetails.SetCursor(0, 0); err != nil {
+			logrus.Debug("Couldn't set cursor to 0,0 for layerDetails")
+		}
+	}
 	return nil
 }
 
@@ -80,14 +88,14 @@ func (v *Layer) Name() string {
 }
 
 // Setup initializes the UI concerns within the context of a global [gocui] view object.
-func (v *Layer) Setup(view *gocui.View, header *gocui.View) error {
+func (v *Layer) Setup(body *gocui.View, header *gocui.View) error {
 	logrus.Tracef("view.Setup() %s", v.Name())
 
 	// set controller options
-	v.view = view
-	v.view.Editable = false
-	v.view.Wrap = false
-	v.view.Frame = false
+	v.body = body
+	v.body.Editable = false
+	v.body.Wrap = false
+	v.body.Frame = false
 
 	v.header = header
 	v.header.Editable = false
@@ -118,16 +126,6 @@ func (v *Layer) Setup(view *gocui.View, header *gocui.View) error {
 			OnAction: v.CursorUp,
 		},
 		{
-			Key:      gocui.KeyArrowLeft,
-			Modifier: gocui.ModNone,
-			OnAction: v.CursorUp,
-		},
-		{
-			Key:      gocui.KeyArrowRight,
-			Modifier: gocui.ModNone,
-			OnAction: v.CursorDown,
-		},
-		{
 			ConfigKeys: []string{"keybinding.page-up"},
 			OnAction:   v.PageUp,
 		},
@@ -148,7 +146,7 @@ func (v *Layer) Setup(view *gocui.View, header *gocui.View) error {
 
 // height obtains the height of the current pane (taking into account the lost space due to the header).
 func (v *Layer) height() uint {
-	_, height := v.view.Size()
+	_, height := v.body.Size()
 	return uint(height - 1)
 }
 
@@ -171,7 +169,8 @@ func (v *Layer) PageDown() error {
 	}
 
 	if step > 0 {
-		err := CursorStep(v.gui, v.view, step)
+		// err := CursorStep(v.gui, v.body, step)
+		err := error(nil)
 		if err == nil {
 			return v.SetCursor(v.vm.LayerIndex + step)
 		}
@@ -189,7 +188,8 @@ func (v *Layer) PageUp() error {
 	}
 
 	if step > 0 {
-		err := CursorStep(v.gui, v.view, -step)
+		// err := CursorStep(v.gui, v.body, -step)
+		err := error(nil)
 		if err == nil {
 			return v.SetCursor(v.vm.LayerIndex - step)
 		}
@@ -199,8 +199,9 @@ func (v *Layer) PageUp() error {
 
 // CursorDown moves the cursor down in the layer pane (selecting a higher layer).
 func (v *Layer) CursorDown() error {
-	if v.vm.LayerIndex < len(v.vm.Layers) {
-		err := CursorDown(v.gui, v.view)
+	if v.vm.LayerIndex < len(v.vm.Layers)-1 {
+		// err := CursorDown(v.gui, v.body)
+		err := error(nil)
 		if err == nil {
 			return v.SetCursor(v.vm.LayerIndex + 1)
 		}
@@ -211,7 +212,8 @@ func (v *Layer) CursorDown() error {
 // CursorUp moves the cursor up in the layer pane (selecting a lower layer).
 func (v *Layer) CursorUp() error {
 	if v.vm.LayerIndex > 0 {
-		err := CursorUp(v.gui, v.view)
+		// err := CursorUp(v.gui, v.body)
+		err := error(nil)
 		if err == nil {
 			return v.SetCursor(v.vm.LayerIndex - 1)
 		}
@@ -292,7 +294,7 @@ func (v *Layer) Render() error {
 
 	// indicate when selected
 	title := "Layers"
-	isSelected := v.gui.CurrentView() == v.view
+	isSelected := v.gui.CurrentView() == v.body
 
 	v.gui.Update(func(g *gocui.Gui) error {
 		var err error
@@ -316,9 +318,8 @@ func (v *Layer) Render() error {
 		}
 
 		// update contents
-		v.view.Clear()
+		v.body.Clear()
 		for idx, layer := range v.vm.Layers {
-
 			var layerStr string
 			if v.constrainedRealEstate {
 				layerStr = fmt.Sprintf("%-4d", layer.Index)
@@ -329,16 +330,15 @@ func (v *Layer) Render() error {
 			compareBar := v.renderCompareBar(idx)
 
 			if idx == v.vm.LayerIndex {
-				_, err = fmt.Fprintln(v.view, compareBar+" "+format.Selected(layerStr))
+				_, err = fmt.Fprintln(v.body, compareBar+" "+format.Selected(layerStr))
 			} else {
-				_, err = fmt.Fprintln(v.view, compareBar+" "+layerStr)
+				_, err = fmt.Fprintln(v.body, compareBar+" "+layerStr)
 			}
 
 			if err != nil {
 				logrus.Debug("unable to write to buffer: ", err)
 				return err
 			}
-
 		}
 		return nil
 	})

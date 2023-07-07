@@ -79,13 +79,12 @@ func Efficiency(trees []*FileTree) (float64, EfficiencySlice) {
 			}
 
 			if previousTreeNode.Data.FileInfo.IsDir {
-				err = previousTreeNode.VisitDepthChildFirst(sizer, nil)
+				err = previousTreeNode.VisitDepthChildFirst(sizer, nil, nil)
 				if err != nil {
 					logrus.Errorf("unable to propagate whiteout dir: %+v", err)
 					return err
 				}
 			}
-
 		} else {
 			sizeBytes = node.Data.FileInfo.Size
 		}

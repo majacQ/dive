@@ -1,10 +1,14 @@
+//go:build linux || darwin
+// +build linux darwin
+
 package podman
 
 import (
 	"fmt"
+	"io"
+
 	"github.com/wagoodman/dive/dive/image"
 	"github.com/wagoodman/dive/dive/image/docker"
-	"io/ioutil"
 )
 
 type resolver struct{}
@@ -38,7 +42,7 @@ func (r *resolver) resolveFromDockerArchive(id string) (*image.Image, error) {
 		return nil, err
 	}
 
-	img, err := docker.NewImageArchive(ioutil.NopCloser(reader))
+	img, err := docker.NewImageArchive(io.NopCloser(reader))
 	if err != nil {
 		return nil, err
 	}

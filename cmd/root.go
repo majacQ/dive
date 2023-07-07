@@ -2,18 +2,18 @@ package cmd
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"path"
 	"strings"
-
-	"github.com/wagoodman/dive/dive"
-	"github.com/wagoodman/dive/dive/filetree"
 
 	"github.com/mitchellh/go-homedir"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"github.com/wagoodman/dive/dive"
+	"github.com/wagoodman/dive/dive/filetree"
 )
 
 var cfgFile string
@@ -77,7 +77,7 @@ func initConfig() {
 	viper.SetDefault("log.path", "./dive.log")
 	viper.SetDefault("log.enabled", false)
 	// keybindings: status view / global
-	viper.SetDefault("keybinding.quit", "ctrl+c")
+	viper.SetDefault("keybinding.quit", "ctrl+c,q")
 	viper.SetDefault("keybinding.toggle-view", "tab")
 	viper.SetDefault("keybinding.filter-files", "ctrl+f, ctrl+slash")
 	// keybindings: layer view
@@ -86,6 +86,7 @@ func initConfig() {
 	// keybindings: filetree view
 	viper.SetDefault("keybinding.toggle-collapse-dir", "space")
 	viper.SetDefault("keybinding.toggle-collapse-all-dir", "ctrl+space")
+	viper.SetDefault("keybinding.toggle-sort-order", "ctrl+o")
 	viper.SetDefault("keybinding.toggle-filetree-attributes", "ctrl+b")
 	viper.SetDefault("keybinding.toggle-added-files", "ctrl+a")
 	viper.SetDefault("keybinding.toggle-removed-files", "ctrl+r")
@@ -146,7 +147,7 @@ func initLogging() {
 		logFileObj, err = os.OpenFile(viper.GetString("log.path"), os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
 		log.SetOutput(logFileObj)
 	} else {
-		log.SetOutput(ioutil.Discard)
+		log.SetOutput(io.Discard)
 	}
 
 	if err != nil {
@@ -198,14 +199,14 @@ func getDefaultCfgFile() string {
 // if not found returns empty string
 func findInPath(pathTo string) string {
 	directory := path.Join(pathTo, "dive")
-	files, err := ioutil.ReadDir(directory)
+	files, err := os.ReadDir(directory)
 	if err != nil {
 		return ""
 	}
 
 	for _, file := range files {
 		filename := file.Name()
-		if path.Ext(filename) == ".yaml" {
+		if path.Ext(filename) == ".yaml" || path.Ext(filename) == ".yml" {
 			return path.Join(directory, filename)
 		}
 	}

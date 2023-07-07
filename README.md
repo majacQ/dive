@@ -1,15 +1,27 @@
 # dive
+[![GitHub release](https://img.shields.io/github/release/wagoodman/dive.svg)](https://github.com/wagoodman/dive/releases/latest)
+[![Validations](https://github.com/wagoodman/dive/actions/workflows/validations.yaml/badge.svg)](https://github.com/wagoodman/dive/actions/workflows/validations.yaml)
 [![Go Report Card](https://goreportcard.com/badge/github.com/wagoodman/dive)](https://goreportcard.com/report/github.com/wagoodman/dive)
-[![Pipeline Status](https://circleci.com/gh/wagoodman/dive.svg?style=svg)](https://circleci.com/gh/wagoodman/dive)
+[![License: MIT](https://img.shields.io/badge/License-MIT%202.0-blue.svg)](https://github.com/wagoodman/dive/blob/main/LICENSE)
 [![Donate](https://img.shields.io/badge/Donate-PayPal-green.svg?style=flat)](https://www.paypal.me/wagoodman)
 
 **A tool for exploring a docker image, layer contents, and discovering ways to shrink the size of your Docker/OCI image.**
+
 
 ![Image](.data/demo.gif)
 
 To analyze a Docker image simply run dive with an image tag/id/digest:
 ```bash
 dive <your-image-tag>
+```
+
+or you can dive with docker command directly
+```
+alias dive="docker run -ti --rm  -v /var/run/docker.sock:/var/run/docker.sock wagoodman/dive"
+dive <your-image-tag>
+
+# for example
+dive nginx:latest
 ```
 
 or if you want to build your image then jump straight into analyzing it:
@@ -83,25 +95,25 @@ With valid `source` options as such:
 
 **Ubuntu/Debian**
 ```bash
-wget https://github.com/wagoodman/dive/releases/download/v0.9.2/dive_0.9.2_linux_amd64.deb
-sudo apt install ./dive_0.9.2_linux_amd64.deb
+export DIVE_VERSION=$(curl -sL "https://api.github.com/repos/wagoodman/dive/releases/latest" | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
+curl -OL https://github.com/wagoodman/dive/releases/download/v${DIVE_VERSION}/dive_${DIVE_VERSION}_linux_amd64.deb
+sudo apt install ./dive_${DIVE_VERSION}_linux_amd64.deb
 ```
 
 **RHEL/Centos**
 ```bash
-curl -OL https://github.com/wagoodman/dive/releases/download/v0.9.2/dive_0.9.2_linux_amd64.rpm
+export DIVE_VERSION=$(curl -sL "https://api.github.com/repos/wagoodman/dive/releases/latest" | grep '"tag_name":' | sed -E 's/.*"v([^"]+)".*/\1/')
+curl -OL https://github.com/wagoodman/dive/releases/download/v${DIVE_VERSION}/dive_${DIVE_VERSION}_linux_amd64.rpm
 rpm -i dive_0.9.2_linux_amd64.rpm
 ```
 
 **Arch Linux**
 
-Available as [dive](https://aur.archlinux.org/packages/dive/) in the Arch User Repository (AUR).
+Available in the [extra repository](https://archlinux.org/packages/extra/x86_64/dive/) and can be installed via [pacman](https://wiki.archlinux.org/title/Pacman):
 
 ```bash
-yay -S dive
+pacman -S dive
 ```
-
-The above example assumes [`yay`](https://aur.archlinux.org/packages/yay/) as the tool for installing AUR packages.
 
 **Mac**
 
@@ -117,11 +129,11 @@ If you use [MacPorts](https://www.macports.org):
 sudo port install dive
 ```
 
-Or download the latest Darwin build from the [releases page](https://github.com/wagoodman/dive/releases/download/v0.9.2/dive_0.9.2_darwin_amd64.tar.gz).
+Or download the latest Darwin build from the [releases page](https://github.com/wagoodman/dive/releases/latest).
 
 **Windows**
 
-Download the [latest release](https://github.com/wagoodman/dive/releases/download/v0.9.2/dive_0.9.2_windows_amd64.zip).
+Download the [latest release](https://github.com/wagoodman/dive/releases/latest).
 
 **Go tools**
 Requires Go version 1.10 or higher.
@@ -130,6 +142,17 @@ Requires Go version 1.10 or higher.
 go get github.com/wagoodman/dive
 ```
 *Note*: installing in this way you will not see a proper version when running `dive -v`.
+
+**Nix/NixOS**
+
+On NixOS:
+```bash
+nix-env -iA nixos.dive
+```
+On non-NixOS (Linux, Mac)
+```bash
+nix-env -iA nixpkgs.dive
+```
 
 **Docker**
 ```bash
@@ -192,7 +215,7 @@ You can override the CI config path with the `--ci-config` option.
 
 Key Binding                                | Description
 -------------------------------------------|---------------------------------------------------------
-<kbd>Ctrl + C</kbd>                        | Exit
+<kbd>Ctrl + C</kbd> or <kbd>Q</kbd>        | Exit
 <kbd>Tab</kbd>                             | Switch between the layer and filetree views
 <kbd>Ctrl + F</kbd>                        | Filter files
 <kbd>PageUp</kbd>                          | Scroll up a page
@@ -274,3 +297,5 @@ dive will search for configs in the following locations:
 - `$XDG_CONFIG_DIRS/dive/*.yaml`
 - `~/.config/dive/*.yaml`
 - `~/.dive.yaml`
+
+`.yml` can be used instead of `.yaml` if desired.

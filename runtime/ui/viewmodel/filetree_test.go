@@ -2,9 +2,6 @@ package viewmodel
 
 import (
 	"bytes"
-	"github.com/wagoodman/dive/dive/image/docker"
-	"github.com/wagoodman/dive/runtime/ui/format"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -12,7 +9,10 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/sergi/go-diff/diffmatchpatch"
+
 	"github.com/wagoodman/dive/dive/filetree"
+	"github.com/wagoodman/dive/dive/image/docker"
+	"github.com/wagoodman/dive/runtime/ui/format"
 )
 
 const allowTestDataCapture = false
@@ -31,7 +31,7 @@ func testCaseDataFilePath(name string) string {
 
 func helperLoadBytes(t *testing.T) []byte {
 	path := testCaseDataFilePath(t.Name())
-	theBytes, err := ioutil.ReadFile(path)
+	theBytes, err := os.ReadFile(path)
 	if err != nil {
 		t.Fatalf("unable to load test data ('%s'): %+v", t.Name(), err)
 	}
@@ -44,7 +44,7 @@ func helperCaptureBytes(t *testing.T, data []byte) {
 	}
 
 	path := testCaseDataFilePath(t.Name())
-	err := ioutil.WriteFile(path, data, 0644)
+	err := os.WriteFile(path, data, 0644)
 
 	if err != nil {
 		t.Fatalf("unable to save test data ('%s'): %+v", t.Name(), err)
@@ -73,7 +73,7 @@ func assertTestData(t *testing.T, actualBytes []byte) {
 	helperCheckDiff(t, expectedBytes, actualBytes)
 }
 
-func initializeTestViewModel(t *testing.T) *FileTree {
+func initializeTestViewModel(t *testing.T) *FileTreeViewModel {
 	result := docker.TestAnalysisFromArchive(t, "../../../.data/test-docker-image.tar")
 
 	cache := filetree.NewComparer(result.RefTrees)
@@ -98,7 +98,7 @@ func initializeTestViewModel(t *testing.T) *FileTree {
 	return vm
 }
 
-func runTestCase(t *testing.T, vm *FileTree, width, height int, filterRegex *regexp.Regexp) {
+func runTestCase(t *testing.T, vm *FileTreeViewModel, width, height int, filterRegex *regexp.Regexp) {
 	err := vm.Update(filterRegex, width, height)
 	if err != nil {
 		t.Errorf("failed to update viewmodel: %v", err)

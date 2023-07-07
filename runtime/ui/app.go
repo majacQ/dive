@@ -3,14 +3,14 @@ package ui
 import (
 	"sync"
 
+	"github.com/awesome-gocui/gocui"
+	"github.com/sirupsen/logrus"
+
+	"github.com/wagoodman/dive/dive/filetree"
 	"github.com/wagoodman/dive/dive/image"
 	"github.com/wagoodman/dive/runtime/ui/key"
 	"github.com/wagoodman/dive/runtime/ui/layout"
 	"github.com/wagoodman/dive/runtime/ui/layout/compound"
-
-	"github.com/awesome-gocui/gocui"
-	"github.com/sirupsen/logrus"
-	"github.com/wagoodman/dive/dive/filetree"
 )
 
 const debug = false
@@ -42,7 +42,7 @@ func newApp(gui *gocui.Gui, imageName string, analysis *image.AnalysisResult, ca
 		lm := layout.NewManager()
 		lm.Add(controller.views.Status, layout.LocationFooter)
 		lm.Add(controller.views.Filter, layout.LocationFooter)
-		lm.Add(compound.NewLayerDetailsCompoundLayout(controller.views.Layer, controller.views.Details), layout.LocationColumn)
+		lm.Add(compound.NewLayerDetailsCompoundLayout(controller.views.Layer, controller.views.LayerDetails, controller.views.ImageDetails), layout.LocationColumn)
 		lm.Add(controller.views.Tree, layout.LocationColumn)
 
 		// todo: access this more programmatically
@@ -50,7 +50,7 @@ func newApp(gui *gocui.Gui, imageName string, analysis *image.AnalysisResult, ca
 			lm.Add(controller.views.Debug, layout.LocationColumn)
 		}
 		gui.Cursor = false
-		//g.Mouse = true
+		// g.Mouse = true
 		gui.SetManagerFunc(lm.Layout)
 
 		// var profileObj = profile.Start(profile.CPUProfile, profile.ProfilePath("."), profile.NoShutdownHook)
@@ -77,6 +77,14 @@ func newApp(gui *gocui.Gui, imageName string, analysis *image.AnalysisResult, ca
 				Display:    "Switch view",
 			},
 			{
+				Key:      gocui.KeyArrowRight,
+				OnAction: controller.NextPane,
+			},
+			{
+				Key:      gocui.KeyArrowLeft,
+				OnAction: controller.PrevPane,
+			},
+			{
 				ConfigKeys: []string{"keybinding.filter-files"},
 				OnAction:   controller.ToggleFilterView,
 				IsSelected: controller.views.Filter.IsVisible,
@@ -96,7 +104,6 @@ func newApp(gui *gocui.Gui, imageName string, analysis *image.AnalysisResult, ca
 		if err != nil {
 			return
 		}
-
 	})
 
 	return appSingleton, err
@@ -120,7 +127,6 @@ func newApp(gui *gocui.Gui, imageName string, analysis *image.AnalysisResult, ca
 
 // quit is the gocui callback invoked when the user hits Ctrl+C
 func (a *app) quit() error {
-
 	// profileObj.Stop()
 	// onExit()
 
@@ -139,6 +145,11 @@ func Run(imageName string, analysis *image.AnalysisResult, treeStack filetree.Co
 
 	_, err = newApp(g, imageName, analysis, treeStack)
 	if err != nil {
+		return err
+	}
+
+	key, mod := gocui.MustParse("Ctrl+Z")
+	if err := g.SetKeybinding("", key, mod, handle_ctrl_z); err != nil {
 		return err
 	}
 
